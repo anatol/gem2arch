@@ -61,12 +61,16 @@ def download(gem_name, gem_version = nil)
   return path
 end
 
+def read_pkgbuild_tags(content, tag)
+  content.scan(/^\s*\#\s*#{tag}\s*:(.*)$/).flatten.map{|s| s.strip}.reject{|s| s.empty?}
+end
+
 def read_pkgbuild(file)
   pkgbuild = OpenStruct.new
 
   content = IO.read(file)
-  pkgbuild.maintainers = content.scan(/# Maintainer: (.*)/).flatten.map{|s| s.strip}.reject{|s| s.empty?}
-  pkgbuild.contributors = content.scan(/# Contributor: (.*)/).flatten.map{|s| s.strip}.reject{|s| s.empty?}
+  pkgbuild.maintainers = read_pkgbuild_tags(content, 'Maintainer')
+  pkgbuild.contributors = read_pkgbuild_tags(content, 'Contributor')
 
   return pkgbuild
 end
