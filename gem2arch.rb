@@ -40,8 +40,7 @@ package() {
   gem install --ignore-dependencies --no-user-install -i "$pkgdir/$_gemdir" -n "$pkgdir/usr/bin" $_gemname-$pkgver.gem
   rm "$pkgdir/$_gemdir/cache/$_gemname-$pkgver.gem"
 <% if license_file %>
-  install -d "$pkgdir/usr/share/licenses/$pkgname/"
-  install -m644 "$pkgdir/$_gemdir/gems/$_gemname-$pkgver/<%= license_file %>" "$pkgdir/usr/share/licenses/$pkgname/"
+  install -D -m644 "$pkgdir/$_gemdir/gems/$_gemname-$pkgver/<%= license_file %>" "$pkgdir/usr/share/licenses/$pkgname/<%= license_file %>"
 <% end %>
 }
 }
