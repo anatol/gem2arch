@@ -87,18 +87,7 @@ def current_username
   return "#{name} <#{email}>"
 end
 
-def gen_pkgbuild(gem_path, existing_pkgbuild)
-  gem = Gem::Package.new(gem_path)
-  spec = gem.spec
-
-  arch = spec.extensions.empty? ? 'any' : 'i686 x86_64'
-  sha1sum = Digest::SHA1.file(gem_path).hexdigest
-
-  depends = %w(ruby)
-  depends += spec.runtime_dependencies.map{|d| 'ruby-' + d.name}
-
-  licenses = spec.licenses.map{|l| l.index(' ') ? "'#{l}'" : l}
-
+def find_license_file(spec)
   # find files called COPYING or LICENSE in the root directory
   license_files = spec.files.select do |f|
     next false if f.index('/')
@@ -110,8 +99,21 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
   if license_files.size > 1 then
     $stderr.puts "There are several possible license files found in the gem: #{license_files}"
   end
-  license_file = license_files[0] unless license_files.empty?
 
+  license_files.empty? ? nil : license_files[0]
+end
+
+def gen_pkgbuild(gem_path, existing_pkgbuild)
+  gem = Gem::Package.new(gem_path)
+  spec = gem.spec
+
+  arch = spec.extensions.empty? ? 'any' : 'i686 x86_64'
+  sha1sum = Digest::SHA1.file(gem_path).hexdigest
+
+  depends = %w(ruby)
+  depends += spec.runtime_dependencies.map{|d| 'ruby-' + d.name}
+
+  licenses = spec.licenses.map{|l| l.index(' ') ? "'#{l}'" : l}
 
   if existing_pkgbuild
     maintainers = existing_pkgbuild.maintainers
@@ -135,7 +137,7 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
     arch: arch,
     sha1sum: sha1sum,
     depends: depends.join(' '),
-    license_file: license_file,
+    license_file: find_license_file(spec),
     maintainers: maintainers,
     contributors: contributors
   }
