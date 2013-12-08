@@ -100,7 +100,7 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
   licenses = spec.licenses.map{|l| l.index(' ') ? "'#{l}'" : l}
 
   # find files called COPYING or LICENSE in the root directory
-  license_files = spec.files.dup.keep_if do |f|
+  license_files = spec.files.select do |f|
     next false if f.index('/')
     next true if f.downcase.index('license')
     next true if f.downcase.index('copying')
