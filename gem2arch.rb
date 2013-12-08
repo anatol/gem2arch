@@ -142,4 +142,5 @@ if $0 == __FILE__
   pkgbuild_file = File.join(pkg_name, 'PKGBUILD')
   existing_pkgbuild = read_pkgbuild(pkgbuild_file) if File.exist?(pkgbuild_file)
   IO.write(pkgbuild_file, gen_pkgbuild(gem_path, existing_pkgbuild))
+  FileUtils.cp(gem_path, pkg_name)
 end
