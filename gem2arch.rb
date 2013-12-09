@@ -90,6 +90,10 @@ end
 
 def read_pkgbuild(file)
   pkgbuild = OpenStruct.new
+  pkgbuild.maintainers = []
+  pkgbuild.contributors = []
+
+  return pkgbuild if File.exists?(file)
 
   content = IO.read(file)
   pkgbuild.maintainers = read_pkgbuild_tags(content, 'Maintainer')
@@ -146,14 +150,8 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
 
   licenses = spec.licenses.map{|l| l.index(' ') ? "'#{l}'" : l}
 
-  if existing_pkgbuild
-    maintainers = existing_pkgbuild.maintainers
-    contributors = existing_pkgbuild.contributors
-  else
-    maintainers = []
-    contributors = []
-  end
-
+  maintainers = existing_pkgbuild.maintainers
+  contributors = existing_pkgbuild.contributors
   if maintainers.empty?
     username = current_username()
     maintainers = username ? [username] : ['']
@@ -185,7 +183,7 @@ if $0 == __FILE__
   puts "Generate PKGBUILD for #{pkg_name}"
 
   pkgbuild_file = File.join(pkg_name, 'PKGBUILD')
-  existing_pkgbuild = read_pkgbuild(pkgbuild_file) if File.exist?(pkgbuild_file)
+  existing_pkgbuild = read_pkgbuild(pkgbuild_file)
   IO.write(pkgbuild_file, gen_pkgbuild(gem_path, existing_pkgbuild))
   FileUtils.cp(gem_path, pkg_name)
 end
