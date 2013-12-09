@@ -4,11 +4,12 @@ require 'date'
 require 'digest/sha1'
 require 'erubis'
 require 'fileutils'
+require 'json'
+require 'net/http'
 require 'optparse'
 require 'ostruct'
 require 'rubygems'
 require 'rubygems/package'
-require 'tmpdir'
 
 #TODO: generate correct native depepdencies
 #TODO: utilize 'aurb' + pacman (or something else) to get version of the package. So we avoid using versioned dependencies in depends=()
@@ -67,6 +68,33 @@ def parse_args(args)
   options.version = args[1]
 
   options
+end
+
+def find_package_version(package)
+  pkg = OpenStruct.new
+
+  # First check extra/community
+  pacinfo = `pacman -Si #{package}`
+  if $?.success? then
+    pkg.aur = false
+    pkg.versoin = /Version\s*:(.*)-\d+/.match(pacinfo)[0]
+    repo = /Repository\s*:(.*)/.match(pacinfo)[0]
+    arch = /Architecture\s*:(.*)/.match(pacinfo)[0]
+    pkg.url = "https://www.archlinux.org/packages/#{repo}/#{arch}/#{package}/"
+    return pkg
+  end
+
+  aur_request = "https://aur.archlinux.org/rpc.php?type=info&arg=#{package}"
+  resp = Net::HTTP.get_response(URI.parse(aur_request))
+  result = JSON.parse(resp.body)
+  if result['resultcount'] > 0 then
+    pkg.aur = true
+    pkg.url = "https://aur.archlinux.org/packages/#{package}/"
+    pkg.version = /(.*)-\d+/.match(result['results']['Version'])[0]
+    return pkg
+  end
+
+  return nil
 end
 
 def download(gem_name, gem_version = nil)
@@ -175,6 +203,10 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
 end
 
 if $0 == __FILE__
+  puts find_package_version('ruby')
+  puts find_package_version('ruby-rails')
+  puts find_package_version('eeeeeeeeeeeeeeeeeeeeeeeeee')
+
   options = parse_args(ARGV)
 
   gem_path = download(options.name, options.version)
