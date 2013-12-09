@@ -4,6 +4,7 @@ require 'date'
 require 'digest/sha1'
 require 'erubis'
 require 'fileutils'
+require 'optparse'
 require 'ostruct'
 require 'rubygems'
 require 'rubygems/package'
@@ -45,6 +46,29 @@ package() {
 }
 }
 
+def parse_args(args)
+  options = OpenStruct.new
+  options.install = true
+
+  opt_parser = OptionParser.new do |opts|
+    opts.banner = 'Usage: gem2arch [options] gem_name [gem_version]'
+
+    opts.on('-i', '--[no-]install', 'Install generated arch packages') do |i|
+      options.install = i
+    end
+  end
+
+  opt_parser.parse!(args)
+  if args.size < 1 or args.size > 2
+    puts opt_parser.help
+    exit 1
+  end
+  options.name = args[0]
+  options.version = args[1]
+
+  options
+end
+
 def download(gem_name, gem_version = nil)
   dependency = Gem::Dependency.new(gem_name, gem_version)
   found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency(dependency)
@@ -70,6 +94,8 @@ def read_pkgbuild(file)
   content = IO.read(file)
   pkgbuild.maintainers = read_pkgbuild_tags(content, 'Maintainer')
   pkgbuild.contributors = read_pkgbuild_tags(content, 'Contributor')
+
+  # TODO: Read package dependencies. If it does not start from ruby- then assume it is a native dependency. Preserve it.
 
   return pkgbuild
 end
@@ -111,6 +137,12 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
 
   depends = %w(ruby)
   depends += spec.runtime_dependencies.map{|d| 'ruby-' + d.name}
+  # Iterate over all depepdencies:
+  # - check if dependency exists in pacman/aur. If not - report and generate one
+  # - check if version in pacman/aur is the same as in gem index. If not - report and suggest to mark it out-of-date
+  # - check if version in pacman/aur matches dependency requirement. If not - report and generate one
+  #
+  # Generate all needed dependencies.
 
   licenses = spec.licenses.map{|l| l.index(' ') ? "'#{l}'" : l}
 
@@ -145,16 +177,10 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
 end
 
 if $0 == __FILE__
-  if ARGV.length < 1
-    puts "Usage: #{$0} GEM_NAME [GEM_VER]"
-    exit
-  end
+  options = parse_args(ARGV)
 
-  gem_name = ARGV[0]
-  gem_version = ARGV[1]
-
-  gem_path = download(gem_name, gem_version)
-  pkg_name = 'ruby-' + gem_name
+  gem_path = download(options.name, options.version)
+  pkg_name = 'ruby-' + options.name
   Dir.mkdir(pkg_name) unless File.exist?(pkg_name)
   puts "Generate PKGBUILD for #{pkg_name}"
 
