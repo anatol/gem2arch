@@ -116,19 +116,22 @@ def read_pkgbuild_tags(content, tag)
 end
 
 def read_pkgbuild(file)
-  pkgbuild = OpenStruct.new
-  pkgbuild.maintainers = []
-  pkgbuild.contributors = []
+  pkg = OpenStruct.new
+  pkg.maintainers = []
+  pkg.contributors = []
 
-  return pkgbuild unless File.exists?(file)
+  return pkg unless File.exists?(file)
 
   content = IO.read(file)
-  pkgbuild.maintainers = read_pkgbuild_tags(content, 'Maintainer')
-  pkgbuild.contributors = read_pkgbuild_tags(content, 'Contributor')
+  pkg.maintainers = read_pkgbuild_tags(content, 'Maintainer')
+  pkg.contributors = read_pkgbuild_tags(content, 'Contributor')
+
+  # Many ruby gems do not have license field initialized. Read one from exising PKGBUILD so we can use later if upstream did not provide license.
+  pkg.license = content.match('license\s*=(.*)')[1].scan(/[a-zA-Z\-]*/).flatten.reject{|s| s.empty?}[0]
 
   # TODO: Read package dependencies. If it does not start from ruby- then assume it is a native dependency. Preserve it.
 
-  return pkgbuild
+  return pkg
 end
 
 def current_username
@@ -159,17 +162,8 @@ def find_license_file(spec)
   license_files.empty? ? nil : license_files[0]
 end
 
-def gen_pkgbuild(gem_path, existing_pkgbuild)
-  gem = Gem::Package.new(gem_path)
-  spec = gem.spec
-
-  arch = spec.extensions.empty? ? 'any' : 'i686 x86_64'
-  sha1sum = Digest::SHA1.file(gem_path).hexdigest
-
-  depends = %w(ruby)
-  depends += spec.runtime_dependencies.map{|d| 'ruby-' + d.name}
-
-  spec.runtime_dependencies.each do |d|
+def check_gem_dependencies(spec)
+  for d in spec.runtime_dependencies do
     pkg = find_package_version('ruby-' + d.name)
     unless pkg
       $stderr.puts "Cannot find package for gem dependency: #{d.name}"
@@ -178,11 +172,11 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
     end
 
     # Fetch version information for the gem
-    gem = Gem::Dependency.new(d.name, nil)
-    gems_found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency(gem)
-    spec, _ = gems_found.sort_by{ |(s,_)| s.version }.last
-    if spec.version.to_s != pkg.version then
-      $stderr.puts "Arch package for #{d.name} version '#{pkg.version}' differs from gem database version '#{spec.version}'"
+    dep = Gem::Dependency.new(d.name, nil)
+    dep_found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency(dep)
+    dep_spec, _ = dep_found.sort_by{ |(s,_)| s.version }.last
+    if dep_spec.version.to_s != pkg.version then
+      $stderr.puts "Arch package for #{d.name} version '#{pkg.version}' differs from gem database version '#{dep_spec.version}'"
       $stderr.puts "     Visit project page #{pkg.url} and mark package as out-of-date"
       # TODO: generate package for dependency as well
     end
@@ -192,14 +186,24 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
       # Hmm.. Does it mean the it requires older version of gem?
     end
   end
-  # Iterate over all depepdencies:
-  # - check if dependency exists in pacman/aur. If not - report and generate one
-  # - check if version in pacman/aur is the same as in gem index. If not - report and suggest to mark it out-of-date
-  # - check if version in pacman/aur matches dependency requirement. If not - report and generate one
-  #
-  # Generate all needed dependencies.
+end
 
-  licenses = spec.licenses.map{|l| l.index(' ') ? "'#{l}'" : l}
+def gen_pkgbuild(gem_path, existing_pkgbuild)
+  gem = Gem::Package.new(gem_path)
+  spec = gem.spec
+
+  arch = spec.extensions.empty? ? 'any' : 'i686 x86_64'
+  sha1sum = Digest::SHA1.file(gem_path).hexdigest
+
+  check_gem_dependencies(spec)
+  depends = %w(ruby)
+  depends += spec.runtime_dependencies.map{|d| 'ruby-' + d.name}
+
+  spec_licenses = spec.licenses
+  if spec_licenses.empty? and existing_pkgbuild.license
+    spec_licenses = [existing_pkgbuild.license]
+  end
+  licenses = spec_licenses.map{|l| l.index(' ') ? "'#{l}'" : l}
 
   maintainers = existing_pkgbuild.maintainers
   contributors = existing_pkgbuild.contributors
