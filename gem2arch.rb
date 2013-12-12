@@ -34,8 +34,8 @@ url='<%= website %>'
 license=(<%= license %>)
 depends=(<%= depends %>)
 options=(!emptydirs)
-source=("http://rubygems.org/downloads/$_gemname-$pkgver.gem")
-noextract=("$_gemname-$pkgver.gem")
+source=(https://rubygems.org/downloads/$_gemname-$pkgver.gem)
+noextract=($_gemname-$pkgver.gem)
 sha1sums=('<%= sha1sum %>')
 
 package() {
