@@ -134,7 +134,7 @@ def read_pkgbuild(file)
   pkg.contributors = read_pkgbuild_tags(content, 'Contributor')
 
   # Many ruby gems do not have license field initialized. Read one from exising PKGBUILD so we can use later if upstream did not provide license.
-  pkg.license = content.match('license\s*=(.*)')[1].scan(/[a-zA-Z\-]*/).flatten.reject{|s| s.empty?}[0]
+  pkg.license = content.match('license\s*=(.*)')[1].scan(/[a-zA-Z\d\-\.]*/).flatten.reject{|s| s.empty?}[0]
 
   # TODO: Read package dependencies. If it does not start from ruby- then assume it is a native dependency. Preserve it.
 
@@ -159,6 +159,7 @@ def find_license_files(spec)
     next false if f.index('/')
     next true if f.downcase.index('license')
     next true if f.downcase.index('copying')
+    next true if f.downcase.index('copyright')
     false
   end
 
