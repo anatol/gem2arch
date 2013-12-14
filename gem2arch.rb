@@ -76,6 +76,10 @@ def parse_args(args)
   options
 end
 
+def shell_escape_string(str)
+  str.gsub("'", "'\\\\''")
+end
+
 def find_package_version(package)
   pkg = OpenStruct.new
 
@@ -221,7 +225,7 @@ def gen_pkgbuild(gem_path, existing_pkgbuild)
     gem_name: spec.name,
     gem_ver: spec.version,
     website: spec.homepage,
-    description: spec.summary,
+    description: shell_escape_string(spec.summary),
     license: licenses.join(' '),
     arch: arch,
     sha1sum: sha1sum,
