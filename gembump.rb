@@ -96,6 +96,7 @@ end
 # the problem is when dependency uses '=' or '~>' restriction that does not match the last version of the package
 # we need to find the least restricted versioned arch package name
 def dependency_suffix(dep)
+  dep.to_s # this is a workaround for "undefined method `none?'". I can't explain it (ruby GC issue?).
   return nil if dep.latest_version?
 
   # TODO: @index is sorted - we can use bsearch here
@@ -131,7 +132,6 @@ def load_gem_index
   source = Gem::Source.new(url)
   source.load_specs(:released).select{|s| s.match_platform?}
 end
-
 
 @version_cache = {} # String->OpenStruct
 def find_arch_version(package, gem_name, suffix)
