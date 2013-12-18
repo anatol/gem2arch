@@ -99,11 +99,10 @@ def dependency_suffix(dep)
   dep.to_s # this is a workaround for "undefined method `none?'". I can't explain it (ruby GC issue?).
   return nil if dep.latest_version?
 
-  # TODO: @index is sorted - we can use bsearch here
-  all_versions = @index.select{|t| t.name == dep.name}
+  all_versions = @index[dep.name]
 
   # now we need to find the best (the last) version that matches provided dependency
-  required_ind = all_versions.rindex{|s| dep.requirement.satisfied_by?(s.version)}
+  required_ind = all_versions.rindex{|v| dep.requirement.satisfied_by?(v)}
   required_version = all_versions[required_ind]
   next_version = all_versions[required_ind+1]
 
@@ -112,8 +111,8 @@ def dependency_suffix(dep)
   return nil unless next_version
 
   suffix = ''
-  v1 = required_version.version.to_s.split('.')
-  v2 = next_version.version.to_s.split('.')
+  v1 = required_version.to_s.split('.')
+  v2 = next_version.to_s.split('.')
   v1.zip(v2).each do |p1,p2|
     abort("Cannot generate arch name for dependency #{dep}") unless p1
     if p1 == p2
@@ -127,10 +126,25 @@ def dependency_suffix(dep)
   return suffix
 end
 
+# returns name => array of Gem::Versions
 def load_gem_index
   url = Gem.default_sources[0]
   source = Gem::Source.new(url)
-  source.load_specs(:released).select{|s| s.match_platform?}
+
+  index = {}
+  name = nil
+  array = nil
+  source.load_specs(:released).each do |e|
+    next unless e.match_platform?
+    if e.name != name
+      name = e.name
+      array = []
+      index[name] = array
+    end
+    array << e.version
+  end
+
+  return index
 end
 
 @version_cache = {} # String->OpenStruct
@@ -169,8 +183,8 @@ def find_arch_version(package, gem_name, suffix)
     else
       req = Gem::Requirement.default
     end
-    latest = @index.select{|i| i.name == gem_name and req.satisfied_by?(i.version)}.last
-    if latest.version.to_s != pkg.version
+    latest = @index[gem_name].select{|v| req.satisfied_by?(v)}.last
+    if latest.to_s != pkg.version
       puts "Package #{package} is out-of-date (repo=#{pkg.version} gem=#{latest.version.to_s}). Please visit #{pkg.url} and mark it so."
     end
   else
