@@ -205,12 +205,13 @@ for f in Dir['ruby-*/PKGBUILD'] do
     unless arch_pkg
       # no such package
       correct_deps = false
-      break
+      puts "#{pkg.to_s}=>#{arch_name} does not satisfy gem dependency restrictions"
+      next
     end
 
     # make sure we match spec requirement
     unless d.requirement.satisfied_by?(Gem::Version.new(arch_pkg.version))
-      correct_deps = false
+      # Most likely it means arch_name should be updated
       puts "#{pkg.to_s}=>#{arch_name} does not satisfy gem dependency restrictions"
     end
   end
