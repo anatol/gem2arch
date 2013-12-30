@@ -12,7 +12,6 @@ require 'rubygems/remote_fetcher'
 
 #TODO: generate correct native depepdencies (spec.requirements)
 #TODO: check spec.required_ruby_version matches current version
-#TODO: check dependency version matching
 #TODO: check require_paths and remove ext for native gems
 #TODO: in case if the package is marked as out of date - do not report about it to user
 
