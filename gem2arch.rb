@@ -14,7 +14,6 @@ require 'rubygems/remote_fetcher'
 #TODO: check spec.required_ruby_version matches current version
 #TODO: check dependency version matching
 #TODO: check require_paths and remove ext for native gems
-#TODO: for versioned packages: check if spec has binaries - remove them
 #TODO: check that prefix consistst only from numbers and dots
 #TODO: in case if the package is marked as out of date - do not report about it to user
 
@@ -50,6 +49,10 @@ package() {
   rm "$pkgdir/$_gemdir/cache/$_gemname-$pkgver.gem"
 <% for license in license_files %>
   install -D -m644 "$pkgdir/$_gemdir/gems/$_gemname-$pkgver/<%= license %>" "$pkgdir/usr/share/licenses/$pkgname/<%= license %>"
+<% end %>
+<% if remove_binaries %>
+  # non-HEAD version should not install any files in /usr/bin
+  rm -r "$pkgdir/usr/bin/"
 <% end %>
 }
 }
@@ -446,6 +449,10 @@ def gen_pkgbuild(gem_path, existing_pkgbuild, suffix)
     maintainers = username ? [username] : ['']
   end
 
+  # In case if we generate non-HEAD version of package we should clean /usr/bin
+  # as it will conflict with HEAD version of the package
+  remove_binaries = !suffix.nil? and !spec.executables.empty?
+
   version_suffix = suffix ? '-' + suffix : ''
   params = {
     gem_name: spec.name,
@@ -459,7 +466,8 @@ def gen_pkgbuild(gem_path, existing_pkgbuild, suffix)
     depends: depends.join(' '),
     license_files: find_license_files(spec),
     maintainers: maintainers,
-    contributors: contributors
+    contributors: contributors,
+    remove_binaries: remove_binaries
   }
 
   content = Erubis::Eruby.new(PKGBUILD).result(params)
