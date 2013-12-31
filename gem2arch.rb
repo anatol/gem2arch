@@ -47,8 +47,8 @@ package() {
   local _gemdir="$(ruby -e'puts Gem.default_dir')"
   gem install --ignore-dependencies --no-user-install -i "$pkgdir/$_gemdir" -n "$pkgdir/usr/bin" $_gemname-$pkgver.gem
   rm "$pkgdir/$_gemdir/cache/$_gemname-$pkgver.gem"
-<% for license in license_files %>
-  install -D -m644 "$pkgdir/$_gemdir/gems/$_gemname-$pkgver/<%= license %>" "$pkgdir/usr/share/licenses/$pkgname/<%= license %>"
+<% for license_file in license_files %>
+  install -D -m644 "$pkgdir/$_gemdir/gems/$_gemname-$pkgver/<%= license_file %>" "$pkgdir/usr/share/licenses/$pkgname/<%= license_file %>"
 <% end %>
 <% if remove_binaries %>
   # non-HEAD version should not install any files in /usr/bin
