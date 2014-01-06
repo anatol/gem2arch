@@ -14,6 +14,8 @@ require 'rubygems/remote_fetcher'
 #TODO: check spec.required_ruby_version matches current version
 #TODO: check require_paths and remove ext for native gems
 #TODO: in case if the package is marked as out of date - do not report about it to user
+#TODO: install man pages
+#TODO: check that local version matches remote
 
 # A number of gems is provided by standard 'ruby' package.
 # There are several packages provided but only a few of them conflict with *.gem
