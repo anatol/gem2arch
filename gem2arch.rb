@@ -64,8 +64,8 @@ def read_pkgbuild_tags(content, tag)
 end
 
 class PkgBuild
-  attr_reader :name, :slot, :dependencies
-  attr_accessor :version, :release, :maintainers, :contributors, :license
+  attr_reader :slot, :dependencies
+  attr_accessor :name, :version, :release, :maintainers, :contributors, :license
 
   def initialize(filename)
     @filename = filename
@@ -430,6 +430,8 @@ end
 def gen_pkgbuild(gem_path, existing_pkgbuild, suffix)
   gem = Gem::Package.new(gem_path)
   spec = gem.spec
+
+  existing_pkgbuild.name = spec.name
 
   arch = spec.extensions.empty? ? 'any' : 'i686 x86_64'
   sha1sum = Digest::SHA1.file(gem_path).hexdigest
