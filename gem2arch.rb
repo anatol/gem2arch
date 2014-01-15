@@ -157,7 +157,7 @@ def pkg_to_spec(pkg)
   dep = Gem::Dependency.new(pkg.name, req)
   found,_ = Gem::SpecFetcher.fetcher.spec_for_dependency(dep)
   if found.empty?
-    puts "Could not find gem releases for package #{arch_name}"
+    puts "Could not find releases for gem #{pkg.name}"
     return nil
   end
 
@@ -432,6 +432,8 @@ def gen_pkgbuild(gem_path, existing_pkgbuild, suffix)
   spec = gem.spec
 
   existing_pkgbuild.name = spec.name
+  existing_pkgbuild.version = spec.version
+  existing_pkgbuild.release = 1
 
   arch = spec.extensions.empty? ? 'any' : 'i686 x86_64'
   sha1sum = Digest::SHA1.file(gem_path).hexdigest
