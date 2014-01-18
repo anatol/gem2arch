@@ -16,6 +16,7 @@ require 'rubygems/remote_fetcher'
 #TODO: in case if the package is marked as out of date - do not report about it to user
 #TODO: install man pages
 #TODO: check that local version matches remote
+#TODO: do not install gem documentation? --no-documentation
 
 # A number of gems is provided by standard 'ruby' package.
 # There are several packages provided but only a few of them conflict with *.gem
