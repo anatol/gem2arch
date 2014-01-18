@@ -458,7 +458,7 @@ def gen_pkgbuild(gem_path, existing_pkgbuild, suffix)
 
   # In case if we generate non-HEAD version of package we should clean /usr/bin
   # as it will conflict with HEAD version of the package
-  remove_binaries = !suffix.nil? and !spec.executables.empty?
+  remove_binaries = (!suffix.nil? and !spec.executables.empty?)
 
   version_suffix = suffix ? '-' + suffix : ''
   params = {
