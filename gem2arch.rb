@@ -65,8 +65,8 @@ def read_pkgbuild_tags(content, tag)
 end
 
 class PkgBuild
-  attr_reader :slot, :dependencies
-  attr_accessor :name, :version, :release, :maintainers, :contributors, :license
+  attr_reader :dependencies
+  attr_accessor :name, :version, :release, :slot, :maintainers, :contributors, :license
 
   def initialize(filename)
     @filename = filename
@@ -177,10 +177,10 @@ def dependency_suffix(dep)
 
   # now we need to find the best (the last) version that matches provided dependency
   required_ind = all_versions.rindex{|v| dep.requirement.satisfied_by?(v)}
+  abort("Cannot resolve package dependency: #{dep}") unless required_ind
   required_version = all_versions[required_ind]
   next_version = all_versions[required_ind+1]
 
-  abort("Cannot resolve package dependency: #{dep}") unless required_version
   # if required version is already the last version then we don't need a versioned dependency
   return nil unless next_version
 
@@ -435,6 +435,7 @@ def gen_pkgbuild(gem_path, existing_pkgbuild, suffix)
   existing_pkgbuild.name = spec.name
   existing_pkgbuild.version = spec.version
   existing_pkgbuild.release = 1
+  existing_pkgbuild.slot = suffix
 
   arch = spec.extensions.empty? ? 'any' : 'i686 x86_64'
   sha1sum = Digest::SHA1.file(gem_path).hexdigest
