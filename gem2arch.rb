@@ -39,16 +39,16 @@ pkgrel=1
 pkgdesc='<%= description %>'
 arch=(<%= arch %>)
 url='<%= website %>'
-license=(<%= license %>)
+license=('<%= license %>')
 depends=(<%= depends %>)
-options=(!emptydirs)
-source=(https://rubygems.org/downloads/$_gemname-$pkgver.gem)
-noextract=($_gemname-$pkgver.gem)
+options=('!emptydirs')
+source=("https://rubygems.org/downloads/$_gemname-$pkgver.gem")
+noextract=("$_gemname-$pkgver.gem")
 sha1sums=('<%= sha1sum %>')
 
 package() {
   local _gemdir="$(ruby -e'puts Gem.default_dir')"
-  gem install --ignore-dependencies --no-user-install -i "$pkgdir/$_gemdir" -n "$pkgdir/usr/bin" $_gemname-$pkgver.gem
+  gem install --ignore-dependencies --no-user-install -i "$pkgdir/$_gemdir" -n "$pkgdir/usr/bin" "$_gemname-$pkgver.gem"
   rm "$pkgdir/$_gemdir/cache/$_gemname-$pkgver.gem"
 <% for license_file in license_files %>
   install -D -m644 "$pkgdir/$_gemdir/gems/$_gemname-$pkgver/<%= license_file %>" "$pkgdir/usr/share/licenses/$pkgname/<%= license_file %>"
@@ -437,13 +437,13 @@ def gen_pkgbuild(gem_path, existing_pkgbuild, suffix)
   existing_pkgbuild.release = 1
   existing_pkgbuild.slot = suffix
 
-  arch = spec.extensions.empty? ? 'any' : 'i686 x86_64'
+  arch = spec.extensions.empty? ? %q('any') : %q('i686' 'x86_64')
   sha1sum = Digest::SHA1.file(gem_path).hexdigest
 
   gem_dependencies = spec.runtime_dependencies.reject{|d| CONFLICT_GEMS.include?(d.name) }
   more = check_gem_dependencies(gem_dependencies)
-  depends = %w(ruby)
-  depends += gem_dependencies.map{|d| dependency_to_arch(d)}
+  depends = %w('ruby')
+  depends += gem_dependencies.map{|d| "'#{dependency_to_arch(d)}'"}
 
   spec_licenses = spec.licenses
   if spec_licenses.empty? and existing_pkgbuild.license
