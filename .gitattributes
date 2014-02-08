@@ -1,0 +1,2 @@
+# Use better hunk headers for diffs
+*.rb text diff=ruby
