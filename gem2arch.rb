@@ -138,13 +138,13 @@ class PkgBuild
 
   def makepackage
     dir = File.dirname(@filename)
-    `cd #{dir} && makepkg --nodeps -f -i`
+    `cd #{dir} && makepkg --nodeps --force --install`
     return $?.success?
   end
 
   def upload
     dir = File.dirname(@filename)
-    `cd #{dir} && rm -f *.src.tar.gz && makepkg -S -f && burp #{to_s()}-#{@version}-#{@release}.src.tar.gz`
+    `cd #{dir} && rm -f *.src.tar.gz && makepkg --source --force && burp #{to_s()}-#{@version}-#{@release}.src.tar.gz`
     return $?.success?
   end
 end
