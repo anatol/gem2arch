@@ -79,11 +79,11 @@ class PkgBuild
     @content = IO.read(@filename)
 
     @name = @content.match('_gemname=(\S+)')[1]
-    @version = @content.match('pkgver=([\d\.]+)')[1]
+    @version = @content.match('pkgver=([\w\d\.]+)')[1]
     @release = @content.match('pkgrel=(\d+)')[1].to_i
     # dependencies contains only native (non-gem) packages
     @dependencies = @content.match('depends=\((.*)\)')[1].split.reject{|d| d.start_with?('ruby-')}
-    @slot = @content.match('pkgname=ruby-\$_gemname-([\d\.]+)')[1] rescue nil
+    @slot = @content.match('pkgname=ruby-\$_gemname-([\w\d\.]+)')[1] rescue nil
 
     @maintainers = read_pkgbuild_tags(@content, 'Maintainer')
     @contributors = read_pkgbuild_tags(@content, 'Contributor')
@@ -112,12 +112,12 @@ class PkgBuild
       @content.gsub!(/depends=\((.*)\)/, "depends=\(#{dep}\)")
     end
 
-    m = @content.match('pkgver=([\d\.]+)')[1]
+    m = @content.match('pkgver=([\w\d\.]+)')[1]
     if m != @version
       modified = true
       version_bump = true
       @release = 1
-      @content.gsub!(/pkgver=([\d\.]+)/, "pkgver=#{@version}")
+      @content.gsub!(/pkgver=([\w\d\.]+)/, "pkgver=#{@version}")
     end
 
     @content.gsub!(/pkgrel=\d+/, "pkgrel=#{@release}")
@@ -177,6 +177,14 @@ def dependency_suffix(dep)
 
   # now we need to find the best (the last) version that matches provided dependency
   required_ind = all_versions.rindex{|v| dep.requirement.satisfied_by?(v)}
+  if not required_ind and dep.prerelease?
+    # special case for prereleased dependencies
+    all_versions = @index_beta[dep.name]
+    required_ind = all_versions.rindex{|v| dep.requirement.satisfied_by?(v)}
+    abort("Cannot resolve prereleased package dependency: #{dep}") unless required_ind
+    return all_versions[required_ind].to_s
+  end
+
   abort("Cannot resolve package dependency: #{dep}") unless required_ind
   required_version = all_versions[required_ind]
   next_version = all_versions[required_ind+1]
@@ -209,14 +217,14 @@ end
 
 
 # returns name => array of Gem::Versions
-def load_gem_index
+def load_gem_index(type)
   url = Gem.default_sources[0]
   source = Gem::Source.new(url)
 
   index = {}
   name = nil
   array = nil
-  source.load_specs(:released).each do |e|
+  source.load_specs(type).each do |e|
     next unless e.match_platform?
     if e.name != name
       name = e.name
@@ -265,9 +273,16 @@ def find_arch_version(package, gem_name, suffix)
     else
       req = Gem::Requirement.default
     end
-    latest = @index[gem_name].select{|v| req.satisfied_by?(v)}.last
+    index = if req.prerelease?
+      @index_beta
+    else
+      @index
+    end
+
+    latest = index[gem_name].select{|v| req.satisfied_by?(v)}.last
+
     if latest.to_s != pkg.version
-      puts "Package #{package} is out-of-date (repo=#{pkg.version} gem=#{latest.version.to_s}). Please visit #{pkg.url} and mark it so."
+      puts "Package #{package} is out-of-date (repo=#{pkg.version} gem=#{latest.to_s}). Please visit #{pkg.url} and mark it so."
     end
   else
     puts "Package #{package} does not exist. Please create one."
@@ -519,7 +534,8 @@ end
 if $0 == __FILE__
   options = parse_args(ARGV)
 
-  @index = load_gem_index()
+  @index = load_gem_index(:released)
+  @index_beta = load_gem_index(:prerelease)
   `git stash save 'Save before running gem2arch'` if options.use_git
 
   if options.packages.empty?
