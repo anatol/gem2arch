@@ -144,7 +144,7 @@ class PkgBuild
 
   def upload
     dir = File.dirname(@filename)
-    `cd #{dir} && rm -f *.src.tar.gz && makepkg --source --force && burp #{to_s()}-#{@version}-#{@release}.src.tar.gz`
+    `cd #{dir} && rm -f *.src.tar.gz && mkaurball -f && burp #{to_s()}-#{@version}-#{@release}.src.tar.gz`
     return $?.success?
   end
 end
