@@ -138,7 +138,7 @@ class PkgBuild
 
   def makepackage
     dir = File.dirname(@filename)
-    `cd #{dir} && makepkg --nodeps --force --install`
+    `cd #{dir} && makepkg --nodeps --force --install --noconfirm`
     return $?.success?
   end
 
