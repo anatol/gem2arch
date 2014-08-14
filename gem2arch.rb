@@ -243,7 +243,7 @@ def find_arch_version(package, gem_name, suffix)
 
   pkg = nil
   # First check extra/community
-  pacinfo = `pacman -Si #{package} 2>/dev/null`
+  pacinfo = `env LC_ALL=C pacman -Si #{package} 2>/dev/null`
   if $?.success?
     pkg = OpenStruct.new
     pkg.aur = false
