@@ -117,7 +117,7 @@ class PkgBuild
       modified = true
       version_bump = true
       @release = 1
-      @content.gsub!(/pkgver=([\w\d\.]+)/, "pkgver=#{@version}")
+      @content.gsub!(/pkgver=([\w\.]+)/, "pkgver=#{@version}")
     end
 
     @content.gsub!(/pkgrel=\d+/, "pkgrel=#{@release}")
@@ -243,7 +243,7 @@ def find_arch_version(package, gem_name, suffix)
 
   pkg = nil
   # First check extra/community
-  pacinfo = `pacman -Si #{package} 2>/dev/null`
+  pacinfo = `env LC_ALL=C pacman -Si #{package} 2>/dev/null`
   if $?.success?
     pkg = OpenStruct.new
     pkg.aur = false
@@ -431,10 +431,6 @@ def check_gem_dependencies(dependencies)
       next
     end
 
-    # Fetch version information for the gem
-    dep = Gem::Dependency.new(d.name, nil)
-    dep_found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency(dep)
-    dep_spec, _ = dep_found.sort_by{ |(s,_)| s.version }.last
     unless d.requirement.satisfied_by?(Gem::Version.new(pkg.version))
       $stderr.puts "Package #{arch_name} version does not satisfy gem dependency"
     end
